@@ -150,7 +150,21 @@ TOTAL_TOOLS = len(TOOL_CATALOG) + 1
 # MCP SERVER
 # ---------------------------------------------------------------------------
 
-mcp = FastMCP("FinStack")
+security = TransportSecuritySettings(
+    enable_dns_rebinding_protection=True,
+    allowed_hosts=[
+        "finstack-mcp-2.onrender.com",
+        "finstack-mcp-2.onrender.com:*",
+    ],
+    allowed_origins=[
+        "https://finstack-mcp-2.onrender.com",
+    ],
+)
+
+mcp = FastMCP(
+    "FinStack",
+    transport_security=security,
+)
 
 
 register_indian_tools(mcp)
@@ -282,21 +296,7 @@ def main() -> None:
             port,
         )
 
-        # Render's public hostname must be explicitly trusted.
-        #
-        # The MCP SDK otherwise enables DNS-rebinding protection with
-        # localhost-only Host validation when streamable_http_app()
-        # is created without transport_security.
-        security = TransportSecuritySettings(
-            allowed_hosts=[
-                "finstack-mcp-2.onrender.com",
-                "finstack-mcp-2.onrender.com:*",
-            ],
-        )
-
-        app = mcp.streamable_http_app(
-            transport_security=security,
-        )
+        app = mcp.streamable_http_app()
 
         uvicorn.run(
             app,
