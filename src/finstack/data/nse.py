@@ -243,20 +243,37 @@ def _nse_api_request(
 
     NSE commonly requires an initial request to the website in order to
     establish cookies/session state before API calls succeed.
+
+    Diagnostic logging is intentionally included here so we can determine
+    exactly why the official NSE request fails in production. The existing
+    fallback behavior is unchanged.
     """
     session = requests.Session()
     session.headers.update(NSE_HEADERS)
 
     try:
         # Establish NSE session/cookies.
+        logger.info(
+            "NSE API diagnostic: starting request endpoint=%s params=%s",
+            endpoint,
+            params,
+        )
+
         homepage = session.get(
             NSE_BASE,
             timeout=NSE_REQUEST_TIMEOUT,
         )
 
+        logger.info(
+            "NSE API diagnostic: homepage status=%s url=%s cookies=%s",
+            homepage.status_code,
+            homepage.url,
+            list(session.cookies.keys()),
+        )
+
         if homepage.status_code not in (200, 301, 302, 403):
-            logger.debug(
-                "NSE homepage returned HTTP %s",
+            logger.warning(
+                "NSE homepage returned unexpected HTTP status %s",
                 homepage.status_code,
             )
 
@@ -264,6 +281,12 @@ def _nse_api_request(
             endpoint
             if endpoint.startswith("http")
             else f"{NSE_API_BASE}/{endpoint.lstrip('/')}"
+        )
+
+        logger.info(
+            "NSE API diagnostic: requesting url=%s params=%s",
+            url,
+            params,
         )
 
         response = session.get(
@@ -276,28 +299,66 @@ def _nse_api_request(
             },
         )
 
+        logger.info(
+            "NSE API diagnostic: response status=%s url=%s "
+            "content_type=%s content_length=%s",
+            response.status_code,
+            response.url,
+            response.headers.get("content-type"),
+            response.headers.get("content-length"),
+        )
+
         response.raise_for_status()
 
-        return response.json()
+        payload = response.json()
+
+        logger.info(
+            "NSE API diagnostic: JSON parsed successfully "
+            "endpoint=%s payload_type=%s payload_keys=%s",
+            endpoint,
+            type(payload).__name__,
+            (
+                list(payload.keys())
+                if isinstance(payload, dict)
+                else None
+            ),
+        )
+
+        return payload
 
     except requests.RequestException as exc:
-        logger.warning(
-            "NSE API request failed for %s: %s",
+        logger.error(
+            "NSE API diagnostic: REQUEST FAILURE "
+            "endpoint=%s params=%s error_type=%s error=%s",
             endpoint,
+            params,
+            type(exc).__name__,
             exc,
+            exc_info=True,
         )
+
     except ValueError as exc:
-        logger.warning(
-            "NSE API returned invalid JSON for %s: %s",
+        logger.error(
+            "NSE API diagnostic: INVALID JSON "
+            "endpoint=%s params=%s error_type=%s error=%s",
             endpoint,
+            params,
+            type(exc).__name__,
             exc,
+            exc_info=True,
         )
+
     except Exception as exc:
-        logger.warning(
-            "Unexpected NSE API error for %s: %s",
+        logger.error(
+            "NSE API diagnostic: UNEXPECTED FAILURE "
+            "endpoint=%s params=%s error_type=%s error=%s",
             endpoint,
+            params,
+            type(exc).__name__,
             exc,
+            exc_info=True,
         )
+
     finally:
         session.close()
 
