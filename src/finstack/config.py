@@ -49,73 +49,145 @@ ENTERPRISE_ONLY_TOOLS = {
 class FinStackConfig:
     """Central configuration for the server and hosted add-ons."""
 
-    host: str = field(default_factory=lambda: os.getenv("FINSTACK_HOST", "127.0.0.1"))
-    port: int = field(default_factory=lambda: int(os.getenv("FINSTACK_PORT", "8000")))
-    log_level: str = field(default_factory=lambda: os.getenv("FINSTACK_LOG_LEVEL", "INFO"))
+    # Render requires the web server to listen on all interfaces.
+    # FINSTACK_HOST can override this if needed.
+    host: str = field(
+        default_factory=lambda: os.getenv("FINSTACK_HOST", "0.0.0.0")
+    )
+
+    # Render provides PORT at runtime.
+    # FINSTACK_PORT can override PORT if explicitly configured.
+    port: int = field(
+        default_factory=lambda: int(
+            os.getenv(
+                "FINSTACK_PORT",
+                os.getenv("PORT", "10000"),
+            )
+        )
+    )
+
+    log_level: str = field(
+        default_factory=lambda: os.getenv(
+            "FINSTACK_LOG_LEVEL",
+            "INFO",
+        )
+    )
+
     mode: UserTier = field(
-        default_factory=lambda: UserTier(os.getenv("FINSTACK_MODE", "free"))
+        default_factory=lambda: UserTier(
+            os.getenv("FINSTACK_MODE", "free")
+        )
     )
 
     cache_ttl_quotes: int = field(
-        default_factory=lambda: int(os.getenv("FINSTACK_CACHE_TTL_QUOTES", "300"))
-    )
-    cache_ttl_fundamentals: int = field(
-        default_factory=lambda: int(os.getenv("FINSTACK_CACHE_TTL_FUNDAMENTALS", "3600"))
-    )
-    cache_ttl_historical: int = field(
-        default_factory=lambda: int(os.getenv("FINSTACK_CACHE_TTL_HISTORICAL", "86400"))
+        default_factory=lambda: int(
+            os.getenv("FINSTACK_CACHE_TTL_QUOTES", "300")
+        )
     )
 
-    # These integrations are optional. The package should still work without them.
+    cache_ttl_fundamentals: int = field(
+        default_factory=lambda: int(
+            os.getenv("FINSTACK_CACHE_TTL_FUNDAMENTALS", "3600")
+        )
+    )
+
+    cache_ttl_historical: int = field(
+        default_factory=lambda: int(
+            os.getenv("FINSTACK_CACHE_TTL_HISTORICAL", "86400")
+        )
+    )
+
+    # Optional integrations.
     alpha_vantage_key: str = field(
-        default_factory=lambda: os.getenv("ALPHA_VANTAGE_API_KEY", "")
+        default_factory=lambda: os.getenv(
+            "ALPHA_VANTAGE_API_KEY",
+            "",
+        )
     )
+
     coingecko_key: str = field(
-        default_factory=lambda: os.getenv("COINGECKO_API_KEY", "")
+        default_factory=lambda: os.getenv(
+            "COINGECKO_API_KEY",
+            "",
+        )
     )
+
     sec_user_agent: str = field(
         default_factory=lambda: os.getenv(
-            "SEC_EDGAR_USER_AGENT", "FinStack/0.3.2 arunodayya32@gmail.com"
+            "SEC_EDGAR_USER_AGENT",
+            "FinStack/0.3.2 arunodayya32@gmail.com",
         )
     )
 
     stripe_secret_key: str = field(
-        default_factory=lambda: os.getenv("STRIPE_SECRET_KEY", "")
-    )
-    stripe_webhook_secret: str = field(
-        default_factory=lambda: os.getenv("STRIPE_WEBHOOK_SECRET", "")
-    )
-    razorpay_key_id: str = field(
-        default_factory=lambda: os.getenv("RAZORPAY_KEY_ID", "")
-    )
-    razorpay_key_secret: str = field(
-        default_factory=lambda: os.getenv("RAZORPAY_KEY_SECRET", "")
+        default_factory=lambda: os.getenv(
+            "STRIPE_SECRET_KEY",
+            "",
+        )
     )
 
-    def is_tool_allowed(self, tool_name: str, user_tier: UserTier | None = None) -> bool:
+    stripe_webhook_secret: str = field(
+        default_factory=lambda: os.getenv(
+            "STRIPE_WEBHOOK_SECRET",
+            "",
+        )
+    )
+
+    razorpay_key_id: str = field(
+        default_factory=lambda: os.getenv(
+            "RAZORPAY_KEY_ID",
+            "",
+        )
+    )
+
+    razorpay_key_secret: str = field(
+        default_factory=lambda: os.getenv(
+            "RAZORPAY_KEY_SECRET",
+            "",
+        )
+    )
+
+    def is_tool_allowed(
+        self,
+        tool_name: str,
+        user_tier: UserTier | None = None,
+    ) -> bool:
         """Return whether a given tool is available for the selected tier."""
+
         tier = user_tier or self.mode
 
         if tier == UserTier.ENTERPRISE:
             return True
 
         if tier == UserTier.FREE:
-            return tool_name not in FREE_TIER_LOCKED_TOOLS and tool_name not in ENTERPRISE_ONLY_TOOLS
+            return (
+                tool_name not in FREE_TIER_LOCKED_TOOLS
+                and tool_name not in ENTERPRISE_ONLY_TOOLS
+            )
 
         if tier in (UserTier.PRO, UserTier.API):
             return tool_name not in ENTERPRISE_ONLY_TOOLS
 
         return True
 
-    def get_rate_limit(self, user_tier: UserTier | None = None) -> int:
+    def get_rate_limit(
+        self,
+        user_tier: UserTier | None = None,
+    ) -> int:
         """Return the daily request cap for the selected tier."""
+
         tier = user_tier or self.mode
+
         return TIER_RATE_LIMITS.get(tier, 100)
 
     def setup_logging(self) -> None:
         """Set up a basic structured log format."""
+
         logging.basicConfig(
-            level=getattr(logging, self.log_level.upper(), logging.INFO),
+            level=getattr(
+                self.log_level.upper(),
+                logging.INFO,
+            ),
             format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
