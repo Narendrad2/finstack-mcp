@@ -1,8 +1,10 @@
 """Main entry point for the FinStack MCP server."""
 
 import logging
+import os
 import sys
 
+import uvicorn
 from mcp.server.fastmcp import FastMCP
 
 from finstack.config import config
@@ -21,8 +23,10 @@ from finstack.tools.probability import register_probability_tools
 from finstack.tools.intelligence import register_intelligence_tools
 from finstack.tools.phase4 import register_phase4_tools
 
+
 config.setup_logging()
 logger = logging.getLogger("finstack")
+
 
 TOOL_CATALOG = [
     {"name": "nse_quote", "description": "Real-time NSE stock quote", "tier": "free"},
@@ -65,7 +69,7 @@ TOOL_CATALOG = [
     {"name": "backtest_strategy", "description": "SMA crossover strategy backtesting", "tier": "pro"},
     {"name": "calculate_tax_liability", "description": "LTCG/STCG tax calculator for Indian equity and mutual fund trades", "tier": "free"},
 
-    # ── Market Intelligence (Tools 41–48) ──
+    # Market Intelligence
     {"name": "options_oi_analytics", "description": "Max Pain, PCR trend, IV summary, top OI strikes [Sensibull Pro ₹1,300/mo → FREE]", "tier": "free"},
     {"name": "options_greeks", "description": "Black-Scholes Greeks: Delta, Gamma, Theta, Vega, Rho [Sensibull Pro → FREE]", "tier": "free"},
     {"name": "nse_insider_trading", "description": "NSE SAST insider trading disclosures [Trendlyne ₹4,950/yr → FREE]", "tier": "free"},
@@ -80,24 +84,24 @@ TOOL_CATALOG = [
     {"name": "dividend_history_deep", "description": "10-year dividend history + trailing yield [Bloomberg/FactSet paid → FREE]", "tier": "free"},
     {"name": "nifty_pcr_trend", "description": "Nifty PCR across all expiries + overall sentiment [Sensibull ₹1,300/mo → FREE]", "tier": "free"},
 
-    # ── Broker + Credit + ESG ──
+    # Broker + Credit + ESG
     {"name": "live_quote", "description": "Real-time NSE quote via Angel One SmartAPI — zero delay [Zerodha ₹500/mo → FREE]", "tier": "free"},
     {"name": "market_depth", "description": "Level 2 order book top 5 bid/ask via Angel One [Zerodha ₹500/mo → FREE]", "tier": "free"},
     {"name": "broker_setup_status", "description": "Check Angel One SmartAPI integration status + setup guide", "tier": "free"},
     {"name": "credit_ratings", "description": "NSE/BSE credit ratings from SEBI filings [Bloomberg $24k/yr → FREE]", "tier": "free"},
     {"name": "brsr_esg", "description": "BRSR sustainability data from SEBI filings [Bloomberg ESG $24k/yr → FREE]", "tier": "free"},
 
-    # ── Broker: Fyers API v3 ──
+    # Fyers
     {"name": "fyers_live_quote", "description": "Real-time NSE quote via Fyers API v3 (zero delay)", "tier": "free"},
     {"name": "fyers_candles", "description": "Historical OHLCV candles from Fyers API v3", "tier": "free"},
     {"name": "fyers_status", "description": "Fyers API configuration status + setup guide", "tier": "free"},
 
-    # ── Broker: ICICI Breeze ──
+    # ICICI Breeze
     {"name": "icici_live_quote", "description": "Real-time NSE quote via ICICI Breeze (zero delay)", "tier": "free"},
     {"name": "icici_candles", "description": "Historical OHLCV candles from ICICI Breeze", "tier": "free"},
     {"name": "icici_status", "description": "ICICI Breeze configuration status + daily session guide", "tier": "free"},
 
-    # ── Phase 3: Multi-agent + Intelligence ──
+    # Multi-agent + Intelligence
     {"name": "get_social_sentiment", "description": "Social sentiment for any NSE stock from Reddit + Twitter (BUY/HOLD/SELL)", "tier": "free"},
     {"name": "get_stock_brief", "description": "Multi-agent AI debate: 6 personas analyse a stock → consensus signal", "tier": "free"},
     {"name": "get_stock_debate", "description": "3-round sequential debate: agents read each other and rebut → emergent consensus with reasoning chain", "tier": "free"},
@@ -105,7 +109,7 @@ TOOL_CATALOG = [
     {"name": "get_nifty_outlook", "description": "Nifty direction probability % (RSI + FII + PCR + VIX + G-Sec + GIFT Nifty)", "tier": "free"},
     {"name": "get_fno_trade_setup", "description": "NIFTY/BANKNIFTY options setup: BUY_CE, BUY_PE, or NO_TRADE with ATM strike and approval-ready reasoning", "tier": "free"},
 
-    # ── Phase 3: Intelligence tools ──
+    # Phase 3
     {"name": "predict_earnings", "description": "AI earnings preview: beat/miss probability before quarterly results", "tier": "free"},
     {"name": "analyze_portfolio", "description": "Portfolio X-ray: P&L, XIRR, sector concentration, risk flags, diversification score", "tier": "free"},
     {"name": "get_mf_overlap", "description": "Mutual fund overlap: % common holdings between two funds (AMFI data)", "tier": "free"},
@@ -116,7 +120,7 @@ TOOL_CATALOG = [
     {"name": "scan_pledge_risks", "description": "Scan multiple stocks for promoter pledge risk simultaneously", "tier": "free"},
     {"name": "detect_pump", "description": "Pump-and-dump detector: volume spike + circuit days + price surge", "tier": "free"},
 
-    # ── Phase 4: Indian market tools ──
+    # Phase 4
     {"name": "scan_watchlist", "description": "Batch-rank a watchlist by signal score for daily triage and automation", "tier": "free"},
     {"name": "get_stock_timeline", "description": "Unified stock timeline: news, results, insider, bulk deals, sentiment, pledge", "tier": "free"},
     {"name": "get_stock_signal_score", "description": "Automation-friendly stock ranking score with supports, risks, and factor breakdown", "tier": "free"},
@@ -131,15 +135,22 @@ TOOL_CATALOG = [
     {"name": "analyze_budget_live", "description": "Real-time budget speech analyzer: paste FM text → instant sector/stock signals", "tier": "free"},
     {"name": "get_budget_impact", "description": "Historical Union Budget impact by year: winners, losers, key announcements", "tier": "free"},
 
-    # ── Signal outcome tracking ──
+    # Signal outcome tracking
     {"name": "get_signal_accuracy", "description": "Accuracy stats for FinStack signals — backed by real 7d/30d outcome data [unique to finstack-mcp]", "tier": "free"},
     {"name": "get_signal_history", "description": "View recent BUY/HOLD/SELL signals with actual 7-day returns and outcome labels", "tier": "free"},
     {"name": "check_signal_outcomes", "description": "Trigger outcome check for pending signals (runs automatically, call manually to force)", "tier": "free"},
 ]
 
+
 TOTAL_TOOLS = len(TOOL_CATALOG) + 1
 
+
+# ---------------------------------------------------------------------------
+# MCP SERVER
+# ---------------------------------------------------------------------------
+
 mcp = FastMCP("FinStack")
+
 
 register_indian_tools(mcp)
 register_global_tools(mcp)
@@ -160,6 +171,7 @@ register_phase4_tools(mcp)
 @mcp.tool()
 def finstack_info() -> str:
     """Return basic server metadata and useful links."""
+
     import json
 
     from finstack import __version__
@@ -188,40 +200,30 @@ def finstack_info() -> str:
     )
 
 
-def main() -> None:
-    """Start the MCP server using stdio or streamable HTTP transport."""
-    transport = "stdio"
+@mcp.custom_route(
+    "/health",
+    methods=["GET"],
+)
+async def health_endpoint(request):
+    """HTTP health endpoint for Render and uptime monitoring."""
 
-    if "--transport" in sys.argv:
-        idx = sys.argv.index("--transport")
-        if idx + 1 < len(sys.argv):
-            transport = sys.argv[idx + 1]
+    from starlette.responses import JSONResponse
 
-    import os
+    from finstack import __version__
 
-    transport = os.getenv("FINSTACK_TRANSPORT", transport)
-
-    logger.info(
-        "Starting FinStack MCP server v%s",
-        __import__("finstack").__version__,
+    return JSONResponse(
+        {
+            "status": "ok",
+            "version": __version__,
+            "mode": config.mode.value,
+            "tools": TOTAL_TOOLS,
+        }
     )
-    logger.info("Transport: %s", transport)
-    logger.info("Mode: %s", config.mode.value)
-
-    if transport == "stdio":
-        mcp.run(transport="stdio")
-        return
-
-    if transport in ("http", "streamable-http"):
-        mcp.run(transport="streamable-http")
-        return
-
-    logger.error("Unknown transport: %s", transport)
-    sys.exit(1)
 
 
 def health_check() -> dict:
-    """Return a simple health payload for uptime checks."""
+    """Return a simple health payload for internal checks."""
+
     from finstack import __version__
 
     return {
@@ -230,6 +232,77 @@ def health_check() -> dict:
         "mode": config.mode.value,
         "tools": TOTAL_TOOLS,
     }
+
+
+def main() -> None:
+    """Start the MCP server using stdio or Streamable HTTP transport."""
+
+    transport = "stdio"
+
+    if "--transport" in sys.argv:
+        idx = sys.argv.index("--transport")
+
+        if idx + 1 < len(sys.argv):
+            transport = sys.argv[idx + 1]
+
+    transport = os.getenv(
+        "FINSTACK_TRANSPORT",
+        transport,
+    )
+
+    logger.info(
+        "Starting FinStack MCP server v%s",
+        __import__("finstack").__version__,
+    )
+
+    logger.info(
+        "Transport: %s",
+        transport,
+    )
+
+    logger.info(
+        "Mode: %s",
+        config.mode.value,
+    )
+
+    if transport == "stdio":
+        mcp.run(transport="stdio")
+        return
+
+    if transport in ("http", "streamable-http"):
+
+        host = config.host
+
+        # Render supplies PORT dynamically.
+        # config.py already resolves:
+        # FINSTACK_PORT -> PORT -> 10000
+        port = config.port
+
+        logger.info(
+            "Starting Streamable HTTP server on %s:%s",
+            host,
+            port,
+        )
+
+        # MCP 1.x exposes the Streamable HTTP server as an ASGI app.
+        # Uvicorn is then responsible for the actual network binding.
+        app = mcp.streamable_http_app()
+
+        uvicorn.run(
+            app,
+            host=host,
+            port=port,
+            log_level=config.log_level.lower(),
+        )
+
+        return
+
+    logger.error(
+        "Unknown transport: %s",
+        transport,
+    )
+
+    sys.exit(1)
 
 
 if __name__ == "__main__":
