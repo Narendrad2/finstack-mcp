@@ -16,7 +16,11 @@ ENV FINSTACK_TRANSPORT=streamable-http
 ENV FINSTACK_LOG_LEVEL=INFO
 
 # Render supplies PORT at runtime.
-# Default documentation/exposure port.
 EXPOSE 10000
+
+# Container health check.
+# Render itself will supply the actual PORT environment variable.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD python -c "import os, urllib.request; port=os.getenv('PORT', '10000'); urllib.request.urlopen(f'http://127.0.0.1:{port}/health', timeout=4)" || exit 1
 
 CMD ["python", "-m", "finstack.server", "--transport", "streamable-http"]
