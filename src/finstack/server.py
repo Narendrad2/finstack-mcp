@@ -6,6 +6,7 @@ import sys
 
 import uvicorn
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from finstack.config import config
 from finstack.tools.indian import register_indian_tools
@@ -195,6 +196,7 @@ def finstack_info() -> str:
                 "SEC EDGAR (US filings - free, no API key)",
                 "CoinGecko (Crypto - free tier, 30 calls/min)",
             ],
+            "mcp_endpoint": "/mcp",
         },
         indent=2,
     )
@@ -272,10 +274,6 @@ def main() -> None:
     if transport in ("http", "streamable-http"):
 
         host = config.host
-
-        # Render supplies PORT dynamically.
-        # config.py already resolves:
-        # FINSTACK_PORT -> PORT -> 10000
         port = config.port
 
         logger.info(
@@ -284,9 +282,21 @@ def main() -> None:
             port,
         )
 
-        # MCP 1.x exposes the Streamable HTTP server as an ASGI app.
-        # Uvicorn is then responsible for the actual network binding.
-        app = mcp.streamable_http_app()
+        # Render's public hostname must be explicitly trusted.
+        #
+        # The MCP SDK otherwise enables DNS-rebinding protection with
+        # localhost-only Host validation when streamable_http_app()
+        # is created without transport_security.
+        security = TransportSecuritySettings(
+            allowed_hosts=[
+                "finstack-mcp-2.onrender.com",
+                "finstack-mcp-2.onrender.com:*",
+            ],
+        )
+
+        app = mcp.streamable_http_app(
+            transport_security=security,
+        )
 
         uvicorn.run(
             app,
