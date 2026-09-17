@@ -27,6 +27,7 @@ TIER_RATE_LIMITS = {
     UserTier.ENTERPRISE: 500000,
 }
 
+
 # Free users can call most tools, but these stay paid-only.
 FREE_TIER_LOCKED_TOOLS = {
     "nse_options_chain",
@@ -36,7 +37,9 @@ FREE_TIER_LOCKED_TOOLS = {
     "support_resistance",
 }
 
+
 PRO_TIER_LOCKED_TOOLS = set()
+
 
 ENTERPRISE_ONLY_TOOLS = {
     "custom_screener",
@@ -50,18 +53,27 @@ class FinStackConfig:
     """Central configuration for the server and hosted add-ons."""
 
     # Render requires the web server to listen on all interfaces.
-    # FINSTACK_HOST can override this if needed.
     host: str = field(
-        default_factory=lambda: os.getenv("FINSTACK_HOST", "0.0.0.0")
+        default_factory=lambda: os.getenv(
+            "FINSTACK_HOST",
+            "0.0.0.0",
+        )
     )
 
-    # Render provides PORT at runtime.
-    # FINSTACK_PORT can override PORT if explicitly configured.
+    # Render supplies PORT at runtime.
+    #
+    # Priority:
+    # 1. FINSTACK_PORT, if explicitly configured
+    # 2. Render's PORT
+    # 3. 10000 fallback
     port: int = field(
         default_factory=lambda: int(
             os.getenv(
                 "FINSTACK_PORT",
-                os.getenv("PORT", "10000"),
+                os.getenv(
+                    "PORT",
+                    "10000",
+                ),
             )
         )
     )
@@ -75,25 +87,37 @@ class FinStackConfig:
 
     mode: UserTier = field(
         default_factory=lambda: UserTier(
-            os.getenv("FINSTACK_MODE", "free")
+            os.getenv(
+                "FINSTACK_MODE",
+                "free",
+            )
         )
     )
 
     cache_ttl_quotes: int = field(
         default_factory=lambda: int(
-            os.getenv("FINSTACK_CACHE_TTL_QUOTES", "300")
+            os.getenv(
+                "FINSTACK_CACHE_TTL_QUOTES",
+                "300",
+            )
         )
     )
 
     cache_ttl_fundamentals: int = field(
         default_factory=lambda: int(
-            os.getenv("FINSTACK_CACHE_TTL_FUNDAMENTALS", "3600")
+            os.getenv(
+                "FINSTACK_CACHE_TTL_FUNDAMENTALS",
+                "3600",
+            )
         )
     )
 
     cache_ttl_historical: int = field(
         default_factory=lambda: int(
-            os.getenv("FINSTACK_CACHE_TTL_HISTORICAL", "86400")
+            os.getenv(
+                "FINSTACK_CACHE_TTL_HISTORICAL",
+                "86400",
+            )
         )
     )
 
@@ -178,16 +202,26 @@ class FinStackConfig:
 
         tier = user_tier or self.mode
 
-        return TIER_RATE_LIMITS.get(tier, 100)
+        return TIER_RATE_LIMITS.get(
+            tier,
+            100,
+        )
 
     def setup_logging(self) -> None:
         """Set up a basic structured log format."""
 
+        # Convert the textual log level into the corresponding
+        # logging module integer safely.
+        level_name = self.log_level.upper()
+
+        level = getattr(
+            logging,
+            level_name,
+            logging.INFO,
+        )
+
         logging.basicConfig(
-            level=getattr(
-                self.log_level.upper(),
-                logging.INFO,
-            ),
+            level=level,
             format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
