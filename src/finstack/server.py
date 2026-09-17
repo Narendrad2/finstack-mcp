@@ -64,7 +64,8 @@ TOOL_CATALOG = [
     {"name": "portfolio_analysis", "description": "Portfolio P&L, weights, risk analysis", "tier": "pro"},
     {"name": "backtest_strategy", "description": "SMA crossover strategy backtesting", "tier": "pro"},
     {"name": "calculate_tax_liability", "description": "LTCG/STCG tax calculator for Indian equity and mutual fund trades", "tier": "free"},
-    # ── Market Intelligence (Tools 41–48) — features paid platforms charge for ──
+
+    # ── Market Intelligence (Tools 41–48) ──
     {"name": "options_oi_analytics", "description": "Max Pain, PCR trend, IV summary, top OI strikes [Sensibull Pro ₹1,300/mo → FREE]", "tier": "free"},
     {"name": "options_greeks", "description": "Black-Scholes Greeks: Delta, Gamma, Theta, Vega, Rho [Sensibull Pro → FREE]", "tier": "free"},
     {"name": "nse_insider_trading", "description": "NSE SAST insider trading disclosures [Trendlyne ₹4,950/yr → FREE]", "tier": "free"},
@@ -78,20 +79,24 @@ TOOL_CATALOG = [
     {"name": "promoter_pledge", "description": "Promoter pledge % risk signal [Screener Pro ₹4,999/yr → FREE]", "tier": "free"},
     {"name": "dividend_history_deep", "description": "10-year dividend history + trailing yield [Bloomberg/FactSet paid → FREE]", "tier": "free"},
     {"name": "nifty_pcr_trend", "description": "Nifty PCR across all expiries + overall sentiment [Sensibull ₹1,300/mo → FREE]", "tier": "free"},
-    # ── Broker + Credit + ESG (Tools 54–58) ──
+
+    # ── Broker + Credit + ESG ──
     {"name": "live_quote", "description": "Real-time NSE quote via Angel One SmartAPI — zero delay [Zerodha ₹500/mo → FREE]", "tier": "free"},
     {"name": "market_depth", "description": "Level 2 order book top 5 bid/ask via Angel One [Zerodha ₹500/mo → FREE]", "tier": "free"},
     {"name": "broker_setup_status", "description": "Check Angel One SmartAPI integration status + setup guide", "tier": "free"},
     {"name": "credit_ratings", "description": "NSE/BSE credit ratings from SEBI filings [Bloomberg $24k/yr → FREE]", "tier": "free"},
     {"name": "brsr_esg", "description": "BRSR sustainability data from SEBI filings [Bloomberg ESG $24k/yr → FREE]", "tier": "free"},
+
     # ── Broker: Fyers API v3 ──
     {"name": "fyers_live_quote", "description": "Real-time NSE quote via Fyers API v3 (zero delay)", "tier": "free"},
     {"name": "fyers_candles", "description": "Historical OHLCV candles from Fyers API v3", "tier": "free"},
     {"name": "fyers_status", "description": "Fyers API configuration status + setup guide", "tier": "free"},
+
     # ── Broker: ICICI Breeze ──
     {"name": "icici_live_quote", "description": "Real-time NSE quote via ICICI Breeze (zero delay)", "tier": "free"},
     {"name": "icici_candles", "description": "Historical OHLCV candles from ICICI Breeze", "tier": "free"},
     {"name": "icici_status", "description": "ICICI Breeze configuration status + daily session guide", "tier": "free"},
+
     # ── Phase 3: Multi-agent + Intelligence ──
     {"name": "get_social_sentiment", "description": "Social sentiment for any NSE stock from Reddit + Twitter (BUY/HOLD/SELL)", "tier": "free"},
     {"name": "get_stock_brief", "description": "Multi-agent AI debate: 6 personas analyse a stock → consensus signal", "tier": "free"},
@@ -99,6 +104,7 @@ TOOL_CATALOG = [
     {"name": "detect_unusual_activity", "description": "Smart money detector: OI buildup, block deals, promoter buying, volume spike", "tier": "free"},
     {"name": "get_nifty_outlook", "description": "Nifty direction probability % (RSI + FII + PCR + VIX + G-Sec + GIFT Nifty)", "tier": "free"},
     {"name": "get_fno_trade_setup", "description": "NIFTY/BANKNIFTY options setup: BUY_CE, BUY_PE, or NO_TRADE with ATM strike and approval-ready reasoning", "tier": "free"},
+
     # ── Phase 3: Intelligence tools ──
     {"name": "predict_earnings", "description": "AI earnings preview: beat/miss probability before quarterly results", "tier": "free"},
     {"name": "analyze_portfolio", "description": "Portfolio X-ray: P&L, XIRR, sector concentration, risk flags, diversification score", "tier": "free"},
@@ -109,7 +115,8 @@ TOOL_CATALOG = [
     {"name": "get_pledge_alert", "description": "Promoter pledge early warning: pledge % + QoQ change + risk level", "tier": "free"},
     {"name": "scan_pledge_risks", "description": "Scan multiple stocks for promoter pledge risk simultaneously", "tier": "free"},
     {"name": "detect_pump", "description": "Pump-and-dump detector: volume spike + circuit days + price surge", "tier": "free"},
-    # ── Phase 4: Never-before-built Indian market tools ──
+
+    # ── Phase 4: Indian market tools ──
     {"name": "scan_watchlist", "description": "Batch-rank a watchlist by signal score for daily triage and automation", "tier": "free"},
     {"name": "get_stock_timeline", "description": "Unified stock timeline: news, results, insider, bulk deals, sentiment, pledge", "tier": "free"},
     {"name": "get_stock_signal_score", "description": "Automation-friendly stock ranking score with supports, risks, and factor breakdown", "tier": "free"},
@@ -123,7 +130,8 @@ TOOL_CATALOG = [
     {"name": "get_telegram_tracker", "description": "Dalal Street Telegram tip channel accuracy + pump-and-dump scoring", "tier": "free"},
     {"name": "analyze_budget_live", "description": "Real-time budget speech analyzer: paste FM text → instant sector/stock signals", "tier": "free"},
     {"name": "get_budget_impact", "description": "Historical Union Budget impact by year: winners, losers, key announcements", "tier": "free"},
-    # ── Signal outcome tracking (data moat) ──
+
+    # ── Signal outcome tracking ──
     {"name": "get_signal_accuracy", "description": "Accuracy stats for FinStack signals — backed by real 7d/30d outcome data [unique to finstack-mcp]", "tier": "free"},
     {"name": "get_signal_history", "description": "View recent BUY/HOLD/SELL signals with actual 7-day returns and outcome labels", "tier": "free"},
     {"name": "check_signal_outcomes", "description": "Trigger outcome check for pending signals (runs automatically, call manually to force)", "tier": "free"},
@@ -205,11 +213,6 @@ def main() -> None:
         return
 
     if transport in ("http", "streamable-http"):
-        # MCP 1.x FastMCP.run() in the deployed environment
-        # does not accept host/port keyword arguments.
-        #
-        # Render provides the network environment; FinStack's
-        # configuration supplies the HTTP server settings.
         mcp.run(transport="streamable-http")
         return
 
