@@ -193,7 +193,10 @@ def main() -> None:
 
     transport = os.getenv("FINSTACK_TRANSPORT", transport)
 
-    logger.info("Starting FinStack MCP server v%s", __import__("finstack").__version__)
+    logger.info(
+        "Starting FinStack MCP server v%s",
+        __import__("finstack").__version__,
+    )
     logger.info("Transport: %s", transport)
     logger.info("Mode: %s", config.mode.value)
 
@@ -202,11 +205,12 @@ def main() -> None:
         return
 
     if transport in ("http", "streamable-http"):
-        mcp.run(
-            transport="streamable-http",
-            host=config.host,
-            port=config.port,
-        )
+        # MCP 1.x FastMCP.run() in the deployed environment
+        # does not accept host/port keyword arguments.
+        #
+        # Render provides the network environment; FinStack's
+        # configuration supplies the HTTP server settings.
+        mcp.run(transport="streamable-http")
         return
 
     logger.error("Unknown transport: %s", transport)
